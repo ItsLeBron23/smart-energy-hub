@@ -6,7 +6,16 @@ on:
   pull_request:
     branches: [ main ]
 
+# ДОБАВИ ТОВА ⬇️
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# СЛЕД ТОВА продължава с jobs:
 jobs:
+  security-analysis:
+    # ... останалото е същото
   security-analysis:
     name: 🔍 Security Analysis
     runs-on: ubuntu-latest
