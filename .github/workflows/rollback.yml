@@ -1,0 +1,90 @@
+name: Rollback Strategy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_commit:
+        description: 'Commit SHA or tag to rollback to (e.g., abc1234 or v1.0.0)'
+        required: true
+        type: string
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  rollback:
+    name: 🔄 Rollback Deployment
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code at target
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.target_commit }}
+        fetch-depth: 0
+    
+    - name: Verify target exists
+      run: |
+        git show ${{ inputs.target_commit }} || exit 1
+        echo "✅ Target commit/tag exists"
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build Application
+      run: npm run build
+    
+    - name: Deploy Rollback
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./dist
+        publish_branch: gh-pages
+        commit_message: |
+          🔄 Rollback to ${{ inputs.target_commit }}
+          
+          Reason: ${{ inputs.reason }}
+          Rolled back by: ${{ github.actor }}
+          Timestamp: ${{ github.event.repository.updated_at }}
+    
+    - name: Create Rollback Issue
+      uses: actions/github-script@v7
+      with:
+        script: |
+          await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `🔄 Rollback executed to ${{ inputs.target_commit }}`,
+            body: `## Rollback Details
+            
+            - **Target:** ${{ inputs.target_commit }}
+            - **Reason:** ${{ inputs.reason }}
+            - **Executed by:** @${{ github.actor }}
+            - **Timestamp:** ${{ github.event.repository.updated_at }}
+            
+            ## Actions Taken
+            - ✅ Deployed version from ${{ inputs.target_commit }}
+            - ✅ Updated GitHub Pages
+            
+            Please verify the rollback was successful.`,
+            labels: ['rollback', 'deployment']
+          });
+    
+    - name: Rollback Summary
+      run: |
+        echo "✅ Rollback completed successfully!"
+        echo "🎯 Target: ${{ inputs.target_commit }}"
+        echo "📝 Reason: ${{ inputs.reason }}"
+        echo "🔗 Live URL: https://itsiebron23.github.io/smart-energy-hub/"
