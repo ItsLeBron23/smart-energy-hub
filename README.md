@@ -1,3 +1,10 @@
+ ## 🚀 CI/CD Pipeline
+   
+   This project uses GitHub Actions for automated:
+   - Security scanning
+   - Code quality checks
+   - Automated deployment to GitHub Pages
+   - 
 # Welcome to your Lovable project
 
 ## Project info
